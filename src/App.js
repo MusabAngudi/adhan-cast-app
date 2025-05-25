@@ -42,34 +42,34 @@ export default function App() {
 
   // Function to cast only (no local play)
   const castAdhan = useCallback(() => {
-    console.log("🔌 castAdhan() called, castReady =", castReady);
-    if (!castReady) {
-      console.warn("⚠️ Casting not ready yet.");
-      return;
-    }
+  console.log("🔌 castAdhan() called, castReady =", castReady);
+  if (!castReady) {
+    console.warn("⚠️ Casting not ready yet.");
+    return;
+  }
 
-    console.log("⏭ Requesting Cast session…");
-    const context = window.cast.framework.CastContext.getInstance();
-    context
-      .requestSession()
-      .then(() => {
-        console.log("✅ Cast session granted");
-        const session = context.getCurrentSession();
-        const mediaInfo = new window.chrome.cast.media.MediaInfo(
-          ADHAN_AUDIO_URL,
-          "audio/mpeg"
-        );
-        mediaInfo.metadata = new window.chrome.cast.media.MusicTrackMediaMetadata();
-        mediaInfo.metadata.title = "Adhan";
-        mediaInfo.streamType =
-          window.chrome.cast.media.StreamType.BUFFERED;
+  console.log("⏭ Requesting Cast session…");
+  const context = window.cast.framework.CastContext.getInstance();
+  context
+    .requestSession()
+    .then(() => {
+      console.log("✅ Cast session granted");
+      const session = context.getCurrentSession();
+      const mediaInfo = new window.chrome.cast.media.MediaInfo(
+        ADHAN_AUDIO_URL,
+        "audio/mpeg"
+      );
+      mediaInfo.metadata = new window.chrome.cast.media.MusicTrackMediaMetadata();
+      mediaInfo.metadata.title = "Adhan";
+      mediaInfo.streamType = window.chrome.cast.media.StreamType.BUFFERED;
 
-        const request = new window.chrome.cast.media.LoadRequest(mediaInfo);
-        return session.loadMedia(request);
-      })
-      .then(() => console.log("✅ Adhan.loadMedia() resolved"))
-      .catch((e) => console.error("🚨 Cast error:", e));
-  }, [castReady]);
+      const request = new window.chrome.cast.media.LoadRequest(mediaInfo);
+      console.log("▶️ Sending loadMedia request for", ADHAN_AUDIO_URL);
+      return session.loadMedia(request);
+    })
+    .then(() => console.log("✅ Adhan.loadMedia() resolved"))
+    .catch((e) => console.error("🚨 Cast error:", e));
+}, [castReady]);
 
   // Fetch prayer times and schedule casts
   useEffect(() => {
