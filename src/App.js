@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback } from "react";
 
 const ADHAN_AUDIO_URL =
   "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-;
 
 const DISPLAY_ORDER = [
   "Fajr",
@@ -19,16 +18,16 @@ export default function App() {
   const [prayerTimes, setPrayerTimes] = useState(null);
   const [castReady, setCastReady] = useState(false);
 
-  // 1-time Cast SDK initialization and configuration
+  // 1-time Cast SDK init & configure
   useEffect(() => {
-    const checkInterval = setInterval(() => {
+    const intv = setInterval(() => {
       if (window.chrome?.cast?.isAvailable && window.cast?.framework) {
-        clearInterval(checkInterval);
+        clearInterval(intv);
         setCastReady(true);
 
-        const context = window.cast.framework.CastContext.getInstance();
+        const ctx = window.cast.framework.CastContext.getInstance();
         const policy = window.chrome.cast.AutoJoinPolicy?.ORIGIN_SCOPED;
-        context.setOptions({
+        ctx.setOptions({
           receiverApplicationId:
             window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
           ...(policy && { autoJoinPolicy: policy }),
@@ -37,42 +36,40 @@ export default function App() {
         console.log("✅ Cast SDK is ready and configured");
       }
     }, 500);
-
-    return () => clearInterval(checkInterval);
+    return () => clearInterval(intv);
   }, []);
 
-  // Function to cast only (no local play)
+  // Instrumented castAdhan
   const castAdhan = useCallback(() => {
-  console.log("🔌 castAdhan() called, castReady =", castReady);
-  if (!castReady) {
-    console.warn("⚠️ Casting not ready yet.");
-    return;
-  }
+    console.log("🔌 castAdhan() called, castReady =", castReady);
+    if (!castReady) {
+      console.warn("⚠️ Casting not ready yet.");
+      return;
+    }
+    console.log("⏭ Requesting Cast session…");
+    const ctx = window.cast.framework.CastContext.getInstance();
+    ctx
+      .requestSession()
+      .then(() => {
+        console.log("✅ Cast session granted");
+        const session = ctx.getCurrentSession();
+        const mediaInfo = new window.chrome.cast.media.MediaInfo(
+          ADHAN_AUDIO_URL,
+          "video/mp4"
+        );
+        mediaInfo.metadata = new window.chrome.cast.media.GenericMediaMetadata();
+        mediaInfo.metadata.title = "Big Buck Bunny (Test)";
+        mediaInfo.streamType = window.chrome.cast.media.StreamType.BUFFERED;
 
-  console.log("⏭ Requesting Cast session…");
-  const context = window.cast.framework.CastContext.getInstance();
-  context
-    .requestSession()
-    .then(() => {
-      console.log("✅ Cast session granted");
-      const session = context.getCurrentSession();
-      const mediaInfo = new window.chrome.cast.media.MediaInfo(
-        ADHAN_AUDIO_URL,
-        "audio/mpeg"
-      );
-      mediaInfo.metadata = new window.chrome.cast.media.MusicTrackMediaMetadata();
-      mediaInfo.metadata.title = "Adhan";
-      mediaInfo.streamType = window.chrome.cast.media.StreamType.BUFFERED;
+        const req = new window.chrome.cast.media.LoadRequest(mediaInfo);
+        console.log("▶️ Sending loadMedia for", ADHAN_AUDIO_URL);
+        return session.loadMedia(req);
+      })
+      .then(() => console.log("✅ Adhan.loadMedia() resolved"))
+      .catch((e) => console.error("🚨 Cast error:", e));
+  }, [castReady]);
 
-      const request = new window.chrome.cast.media.LoadRequest(mediaInfo);
-      console.log("▶️ Sending loadMedia request for", ADHAN_AUDIO_URL);
-      return session.loadMedia(request);
-    })
-    .then(() => console.log("✅ Adhan.loadMedia() resolved"))
-    .catch((e) => console.error("🚨 Cast error:", e));
-}, [castReady]);
-
-  // Fetch prayer times and schedule casts
+  // Fetch prayer times and schedule (untouched)
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(async ({ coords }) => {
       const { latitude: lat, longitude: lng } = coords;
@@ -84,21 +81,20 @@ export default function App() {
 
       const now = new Date();
       DISPLAY_ORDER.forEach((name) => {
-        const timeString = data.data.timings[name];
-        if (!timeString) return;
-        const [hh, mm] = timeString.split(":").map(Number);
+        const t = data.data.timings[name];
+        if (!t) return;
+        const [hh, mm] = t.split(":").map(Number);
         const target = new Date(
           now.getFullYear(),
           now.getMonth(),
           now.getDate(),
           hh,
-          mm,
-          0
+          mm
         );
         const delay = target.getTime() - now.getTime();
         if (delay > 0) {
           setTimeout(() => {
-            console.log(`▶️ Casting Adhan for ${name} at ${timeString}`);
+            console.log(`▶️ Casting scheduled for ${name} at ${t}`);
             castAdhan();
           }, delay);
         }
@@ -112,15 +108,14 @@ export default function App() {
 
       {prayerTimes ? (
         <ul className="space-y-2 text-xl">
-          {DISPLAY_ORDER.map((name) => (
-            <li key={name}>
-              <span className="font-semibold">{name}:</span>{" "}
-              {prayerTimes[name]}
+          {DISPLAY_ORDER.map((n) => (
+            <li key={n}>
+              <strong>{n}:</strong> {prayerTimes[n]}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-lg">Loading prayer times…</p>
+        <p>Loading prayer times…</p>
       )}
 
       <div className="mb-4 mt-8">
