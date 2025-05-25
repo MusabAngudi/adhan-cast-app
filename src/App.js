@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 
 const ADHAN_AUDIO_URL =
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+  "https://adhan-cast-hau3bmow6-musabs-projects-63530b23.vercel.app/api/proxy-adhan";
 
 const DISPLAY_ORDER = [
   "Fajr",
