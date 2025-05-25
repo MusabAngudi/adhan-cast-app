@@ -2,7 +2,6 @@
 import { useEffect, useState, useCallback } from "react";
 
 const ADHAN_AUDIO_URL =
-  const ADHAN_AUDIO_URL =
   "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 ;
 
